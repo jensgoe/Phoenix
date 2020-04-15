@@ -477,6 +477,51 @@ class dataview_Tests(wtc.WidgetTestCase):
         dv.EVT_DATAVIEW_CACHE_HINT
 
 
+    #-------------------------------------------------------
+    def test_dataviewCtrl2(self):
+        class MyCustomRenderer(dv.DataViewCustomRenderer):
+            def __init__(self):
+                dv.DataViewCustomRenderer.__init__(self, "PyObject")
+                self._value = ()
+            def SetValue(self, value):
+                self._value = value
+                return True
+            def GetSize(self):
+                return wx.Size(100 * len(self._value), 20)
+            def Render(self, cell, dc, state):
+                self.RenderText(str(self._value), 0, cell, dc, state)
+                return True
+        class MyModel(dv.PyDataViewModel):
+            def GetChildren(self, item, children):
+                if item == dv.NullDataViewItem:
+                    children.append(self.ObjectToItem(0))
+                    children.append(self.ObjectToItem(1))
+                    children.append(self.ObjectToItem(2))
+                    return 3
+                return 0
+            def GetValue(self, item, col):
+                obj = self.ItemToObject(item)
+                result = (666,) * obj
+                return result
+            def GetColumnCount(self):
+                return 1
+            def IsContainer(self, item):
+                if item == dv.NullDataViewItem:
+                    return True
+                else:
+                    return False
+
+        dvc = dv.DataViewCtrl(self.frame)
+        model = MyModel()
+        dvc.AssociateModel(model)
+
+        renderer = MyCustomRenderer()
+        col = dv.DataViewColumn('Col1', renderer, 0, width=320)
+        dvc.AppendColumn(col)
+
+        self.frame.SendSizeEvent()
+        dvc.Refresh()
+        self.myYield()
 
 
 #---------------------------------------------------------------------------
